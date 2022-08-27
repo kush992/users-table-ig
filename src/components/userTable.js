@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { keyBy } from 'lodash';
 
 import { fetchAccounts, fetchAccountTypes } from "../utility/utility";
 
@@ -16,7 +17,6 @@ const UsersTable = () => {
   const [order, setOrder] = useState("asce");
 
   const sorting = (column) => {
-    // onClick to sort by desc when the order is asce. default is set to asce
     if (order === "asce") {
       const sorted = [...data].sort((a, b) => (a[column] > b[column] ? 1 : -1));
       setData(sorted);
@@ -35,8 +35,17 @@ const UsersTable = () => {
       try {
         const account = await fetchAccounts();
         const accountType = await fetchAccountTypes();
-        // creating array with both response
-        setData([...account, ...accountType]);
+
+        const accountResponse = keyBy(account, 'accountType');
+        const accountTypeResponse = keyBy(accountType, 'id');
+        const combinedDataSet = Object.keys(accountResponse).reduce((acc, key) => {
+          acc.push({
+            ...accountResponse[key],
+            ...accountTypeResponse[key]
+          });
+          return acc;
+        }, []);
+        setData(combinedDataSet);
         setLoading(false);
       } catch (error) {
         console.error(error);
@@ -46,7 +55,6 @@ const UsersTable = () => {
     fetchAll();
   }, []);
 
-  console.log(data);
   return (
     <div className="App">
       {loading && <p>Hold tight, getting you there....</p>}
